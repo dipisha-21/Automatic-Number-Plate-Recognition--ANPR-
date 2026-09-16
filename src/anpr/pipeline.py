@@ -1,6 +1,19 @@
 """Modern, reusable YOLOv8 + EasyOCR ANPR inference pipeline."""
 from dataclasses import dataclass, asdict
 from typing import List
+import site
+import sys
+
+# This repository contains a legacy vendored ``ultralytics/`` tree from the
+# original project. In deployed environments the repository root appears
+# before site-packages on sys.path, which can accidentally import that old
+# copy (and its obsolete Hydra/pkg_resources dependency chain) instead of the
+# current Ultralytics package installed from requirements.txt.
+# Prefer the installed package explicitly for the portfolio inference app.
+for _site_packages in reversed(site.getsitepackages()):
+    if _site_packages in sys.path:
+        sys.path.remove(_site_packages)
+    sys.path.insert(0, _site_packages)
 
 import cv2
 from ultralytics import YOLO
