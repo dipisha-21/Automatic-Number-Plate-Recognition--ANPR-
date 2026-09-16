@@ -9,7 +9,10 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
 MODEL_PATH = Path(os.getenv("ANPR_MODEL_PATH", "/tmp/anpr-best.pt"))
-MODEL_URL = os.getenv("ANPR_MODEL_URL", "")
+MODEL_URL = os.getenv(
+    "ANPR_MODEL_URL",
+    "https://github.com/dipisha-21/Automatic-Number-Plate-Recognition--ANPR-/releases/download/anpr-model-demo/best.pt",
+)
 _pipeline = None
 _pipeline_lock = threading.Lock()
 
@@ -26,8 +29,6 @@ HTML = '''
 def ensure_model():
     if MODEL_PATH.exists() and MODEL_PATH.stat().st_size > 0:
         return MODEL_PATH
-    if not MODEL_URL:
-        raise RuntimeError("ANPR_MODEL_URL is not configured on the deployment.")
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = MODEL_PATH.with_suffix(".download")
     urllib.request.urlretrieve(MODEL_URL, tmp_path)
