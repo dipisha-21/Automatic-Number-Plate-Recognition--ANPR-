@@ -31,26 +31,26 @@ jobs:
             workers=2 \
             seed=42 \
             deterministic=True \
-            project=runs/detect \
+            project=${{ github.workspace }}/runs/detect \
             name=anpr_retrain \
             exist_ok=True
 
       - name: Validate trained detector
         run: |
           yolo detect val \
-            model=runs/detect/anpr_retrain/weights/best.pt \
+            model=${{ github.workspace }}/runs/detect/anpr_retrain/weights/best.pt \
             data=data.yaml \
             imgsz=640 \
             device=cpu \
-            project=runs/val \
+            project=${{ github.workspace }}/runs/val \
             name=anpr_retrain \
             exist_ok=True
 
       - name: Stage deployable model
         run: |
           mkdir -p deploy-model
-          cp runs/detect/anpr_retrain/weights/best.pt deploy-model/best.pt
-          cp runs/detect/anpr_retrain/results.csv deploy-model/training-results.csv || true
+          cp "${{ github.workspace }}/runs/detect/anpr_retrain/weights/best.pt" deploy-model/best.pt
+          cp "${{ github.workspace }}/runs/detect/anpr_retrain/results.csv" deploy-model/training-results.csv || true
 
       - name: Upload trained model artifact
         uses: actions/upload-artifact@v4
