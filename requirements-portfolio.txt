@@ -1,0 +1,4 @@
+ultralytics>=8.0,<9
+easyocr>=1.7,<2
+opencv-python>=4.8,<5
+pytest>=8,<9
