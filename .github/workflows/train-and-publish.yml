@@ -3,38 +3,64 @@ name: Train and Publish ANPR
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   train-publish:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install training dependencies
         run: |
           python -m pip install --upgrade pip
           pip install "ultralytics>=8.3,<9" "torch>=2.2" "torchvision>=0.17"
+
       - name: Train detector
         run: |
-          yolo detect train model=yolov8n.pt data=data.yaml epochs=50 imgsz=640 batch=8 device=cpu workers=2 seed=42 deterministic=True project="$GITHUB_WORKSPACE/runs/detect" name=anpr_retrain exist_ok=True
+          yolo detect train \
+            model=yolov8n.pt \
+            data=data.yaml \
+            epochs=50 \
+            imgsz=640 \
+            batch=8 \
+            device=cpu \
+            workers=2 \
+            seed=42 \
+            deterministic=True \
+            project="$GITHUB_WORKSPACE/runs/detect" \
+            name=anpr_retrain \
+            exist_ok=True
+
       - name: Validate detector
         run: |
-          yolo detect val model="$GITHUB_WORKSPACE/runs/detect/anpr_retrain/weights/best.pt" data=data.yaml imgsz=640 device=cpu project="$GITHUB_WORKSPACE/runs/val" name=anpr_retrain exist_ok=True
-      - name: Publish weights to repository with Git LFS
+          yolo detect val \
+            model="$GITHUB_WORKSPACE/runs/detect/anpr_retrain/weights/best.pt" \
+            data=data.yaml \
+            imgsz=640 \
+            device=cpu \
+            project="$GITHUB_WORKSPACE/runs/val" \
+            name=anpr_retrain \
+            exist_ok=True
+
+      - name: Stage deployable model
         run: |
-          mkdir -p models
-          cp "$GITHUB_WORKSPACE/runs/detect/anpr_retrain/weights/best.pt" models/best.pt
-          git lfs install
-          git lfs track "models/*.pt"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .gitattributes models/best.pt
-          git commit -m "model: publish trained ANPR detector"
-          git push
+          mkdir -p deploy-model
+          cp "$GITHUB_WORKSPACE/runs/detect/anpr_retrain/weights/best.pt" deploy-model/best.pt
+          cp "$GITHUB_WORKSPACE/runs/detect/anpr_retrain/results.csv" deploy-model/training-results.csv || true
+          test -s deploy-model/best.pt
+          ls -lh deploy-model
+
+      - name: Upload trained model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: anpr-trained-model
+          path: deploy-model/
+          if-no-files-found: error
+          retention-days: 30
