@@ -4,3 +4,4 @@ ultralytics>=8.0,<9
 easyocr>=1.7,<2
 opencv-python-headless>=4.8,<5
 ipython>=8,<10
+pandas>=2.2,<3
